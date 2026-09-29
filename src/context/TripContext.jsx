@@ -1,0 +1,390 @@
+import React, { createContext, useContext, useMemo, useState } from 'react';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import { destinations } from '../data/destinations';
+import { activities as allActivities } from '../data/activities';
+import { useApp } from './AppContext';
+import { estimateTripBudget, calculateBudgetBreakdown, DEFAULT_BUDGET_RATIOS } from '../utils/calculateBudget';
+
+const TripContext = createContext();
+
+const SEED_TRIPS = [
+  {
+    id: "trip-japan-2026",
+    name: "Japan Autumn Discovery",
+    startDate: "2026-10-10",
+    endDate: "2026-10-17",
+    travelers: 2,
+    destinationIds: [7, 1], // Tokyo, Kyoto
+    budgetOverride: null,
+    budgetRatios: { ...DEFAULT_BUDGET_RATIOS },
+    days: [
+      {
+        dayNumber: 1,
+        title: "Arrival in Tokyo & Shibuya Sunset",
+        destinationId: 7,
+        activityIds: ["act-18"]
+      },
+      {
+        dayNumber: 2,
+        title: "Digital Art & Shinjuku Nightlife",
+        destinationId: 7,
+        activityIds: ["act-17"]
+      },
+      {
+        dayNumber: 3,
+        title: "Bullet Train Shinkansen to Kyoto",
+        destinationId: 1,
+        activityIds: ["act-4"]
+      },
+      {
+        dayNumber: 4,
+        title: "Sacred Torii Gates & Tea Tradition",
+        destinationId: 1,
+        activityIds: ["act-1", "act-2"]
+      },
+      {
+        dayNumber: 5,
+        title: "Arashiyama Bamboo Forest Serenity",
+        destinationId: 1,
+        activityIds: ["act-3"]
+      }
+    ]
+  },
+  {
+    id: "trip-amalfi-2026",
+    name: "Amalfi & Cyclades Escape",
+    startDate: "2026-06-15",
+    endDate: "2026-06-25",
+    travelers: 2,
+    destinationIds: [2, 4], // Amalfi Coast, Santorini
+    budgetOverride: null,
+    budgetRatios: { ...DEFAULT_BUDGET_RATIOS },
+    days: [
+      {
+        dayNumber: 1,
+        title: "Arrival on the Amalfi Coast",
+        destinationId: 2,
+        activityIds: ["act-7"]
+      },
+      {
+        dayNumber: 2,
+        title: "Path of the Gods Clifftop Trek",
+        destinationId: 2,
+        activityIds: ["act-5"]
+      },
+      {
+        dayNumber: 3,
+        title: "Wooden Boat Sail to Capri Island",
+        destinationId: 2,
+        activityIds: ["act-6"]
+      },
+      {
+        dayNumber: 4,
+        title: "Ferry to Santorini & Oia Sunset",
+        destinationId: 4,
+        activityIds: ["act-12"]
+      },
+      {
+        dayNumber: 5,
+        title: "Caldera Ridge Walk to Fira",
+        destinationId: 4,
+        activityIds: ["act-11"]
+      }
+    ]
+  }
+];
+
+export function TripProvider({ children }) {
+  const [trips, setTrips] = useLocalStorage('aether_user_trips', SEED_TRIPS);
+  const [activeTripId, setActiveTripId] = useLocalStorage('aether_active_trip_id', SEED_TRIPS[0].id);
+  const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
+  const { addToast } = useApp();
+
+  // Retrieve active trip object
+  const activeTrip = useMemo(() => {
+    return trips.find((t) => t.id === activeTripId) || trips[0] || null;
+  }, [trips, activeTripId]);
+
+  // Retrieve destinations objects for active trip
+  const activeTripDestinations = useMemo(() => {
+    if (!activeTrip) return [];
+    return activeTrip.destinationIds
+      .map((id) => destinations.find((d) => d.id === id))
+      .filter(Boolean);
+  }, [activeTrip]);
+
+  // Compute active trip budget
+  const activeTripBudget = useMemo(() => {
+    if (!activeTrip) return 0;
+    if (activeTrip.budgetOverride) return activeTrip.budgetOverride;
+    const daysCount = activeTrip.days?.length || 5;
+    return estimateTripBudget(activeTripDestinations, daysCount, activeTrip.travelers || 1);
+  }, [activeTrip, activeTripDestinations]);
+
+  // Compute active trip budget breakdown
+  const activeTripBudgetBreakdown = useMemo(() => {
+    if (!activeTrip) return {};
+    return calculateBudgetBreakdown(activeTripBudget, activeTrip.budgetRatios || DEFAULT_BUDGET_RATIOS);
+  }, [activeTrip, activeTripBudget]);
+
+  // Helper to update specific trip
+  const updateTrip = (tripId, updates) => {
+    setTrips((prev) =>
+      prev.map((trip) => {
+        if (trip.id === tripId) {
+          return { ...trip, ...updates };
+        }
+        return trip;
+      })
+    );
+  };
+
+  // Create trip
+  const createTrip = ({ name, startDate, endDate, travelers = 2, destinationIds = [] }) => {
+    const newTripId = `trip-${Date.now()}`;
+    const initialDest = destinationIds.length ? destinationIds : [1];
+    
+    // Seed 3 initial days
+    const initialDays = [
+      {
+        dayNumber: 1,
+        title: "Arrival & Orientation",
+        destinationId: initialDest[0],
+        activityIds: []
+      },
+      {
+        dayNumber: 2,
+        title: "Discovery & Local Culture",
+        destinationId: initialDest[0],
+        activityIds: []
+      },
+      {
+        dayNumber: 3,
+        title: "Hidden Gems & Leisure",
+        destinationId: initialDest[0],
+        activityIds: []
+      }
+    ];
+
+    const newTrip = {
+      id: newTripId,
+      name: name || "My New Journey",
+      startDate: startDate || new Date().toISOString().split('T')[0],
+      endDate: endDate || "",
+      travelers: Number(travelers) || 1,
+      destinationIds: initialDest,
+      budgetOverride: null,
+      budgetRatios: { ...DEFAULT_BUDGET_RATIOS },
+      days: initialDays
+    };
+
+    setTrips((prev) => [newTrip, ...prev]);
+    setActiveTripId(newTripId);
+    addToast(`Created trip: ${newTrip.name}`, 'success');
+    return newTrip;
+  };
+
+  // Delete trip
+  const deleteTrip = (tripId) => {
+    if (trips.length <= 1) {
+      addToast('Cannot delete the only trip', 'warning');
+      return;
+    }
+    const remaining = trips.filter((t) => t.id !== tripId);
+    setTrips(remaining);
+    if (activeTripId === tripId) {
+      setActiveTripId(remaining[0].id);
+    }
+    addToast('Trip deleted', 'info');
+  };
+
+  // Add destination to trip
+  const addDestinationToTrip = (tripId, destinationId) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip) return;
+
+    if (targetTrip.destinationIds.includes(destinationId)) {
+      addToast('Destination is already in this trip', 'info');
+      return;
+    }
+
+    const dest = destinations.find((d) => d.id === destinationId);
+    const updatedDestIds = [...targetTrip.destinationIds, destinationId];
+    
+    // Append a new day dedicated to this new destination
+    const newDayNumber = (targetTrip.days?.length || 0) + 1;
+    const newDay = {
+      dayNumber: newDayNumber,
+      title: `Explore ${dest ? dest.name : 'New Destination'}`,
+      destinationId,
+      activityIds: []
+    };
+
+    updateTrip(tripId, {
+      destinationIds: updatedDestIds,
+      days: [...(targetTrip.days || []), newDay]
+    });
+
+    addToast(`Added ${dest?.name || 'destination'} to ${targetTrip.name}`, 'success');
+  };
+
+  // Remove destination from trip
+  const removeDestinationFromTrip = (tripId, destinationId) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip) return;
+
+    if (targetTrip.destinationIds.length <= 1) {
+      addToast('A trip needs at least one destination', 'warning');
+      return;
+    }
+
+    const updatedDestIds = targetTrip.destinationIds.filter((id) => id !== destinationId);
+    const fallbackDestId = updatedDestIds[0];
+
+    // Reassign days that used the removed destination
+    const updatedDays = targetTrip.days.map((day) => {
+      if (day.destinationId === destinationId) {
+        return { ...day, destinationId: fallbackDestId };
+      }
+      return day;
+    });
+
+    updateTrip(tripId, {
+      destinationIds: updatedDestIds,
+      days: updatedDays
+    });
+
+    addToast('Destination removed from trip', 'info');
+  };
+
+  // Add activity to specific day
+  const addActivityToDay = (tripId, dayIndex, activityId) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip || !targetTrip.days[dayIndex]) return;
+
+    const currentActivities = targetTrip.days[dayIndex].activityIds || [];
+    if (currentActivities.includes(activityId)) {
+      addToast('Activity already in this day', 'info');
+      return;
+    }
+
+    const updatedDays = [...targetTrip.days];
+    updatedDays[dayIndex] = {
+      ...updatedDays[dayIndex],
+      activityIds: [...currentActivities, activityId]
+    };
+
+    updateTrip(tripId, { days: updatedDays });
+    const act = allActivities.find((a) => a.id === activityId);
+    addToast(`Added "${act?.title || 'Activity'}" to Day ${dayIndex + 1}`, 'success');
+  };
+
+  // Remove activity from specific day
+  const removeActivityFromDay = (tripId, dayIndex, activityId) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip || !targetTrip.days[dayIndex]) return;
+
+    const updatedDays = [...targetTrip.days];
+    updatedDays[dayIndex] = {
+      ...updatedDays[dayIndex],
+      activityIds: (updatedDays[dayIndex].activityIds || []).filter((id) => id !== activityId)
+    };
+
+    updateTrip(tripId, { days: updatedDays });
+    addToast('Activity removed from day', 'info');
+  };
+
+  // Reorder activities within a day
+  const reorderDayActivities = (tripId, dayIndex, newActivityIds) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip || !targetTrip.days[dayIndex]) return;
+
+    const updatedDays = [...targetTrip.days];
+    updatedDays[dayIndex] = {
+      ...updatedDays[dayIndex],
+      activityIds: newActivityIds
+    };
+
+    updateTrip(tripId, { days: updatedDays });
+  };
+
+  // Add a new day to trip
+  const addDayToTrip = (tripId, destinationId) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip) return;
+
+    const destId = destinationId || targetTrip.destinationIds[0] || 1;
+    const dest = destinations.find((d) => d.id === destId);
+    const newDayNumber = (targetTrip.days?.length || 0) + 1;
+
+    const newDay = {
+      dayNumber: newDayNumber,
+      title: `Day in ${dest?.name || 'Paradise'}`,
+      destinationId: destId,
+      activityIds: []
+    };
+
+    updateTrip(tripId, {
+      days: [...(targetTrip.days || []), newDay]
+    });
+    addToast(`Added Day ${newDayNumber} to itinerary`, 'success');
+  };
+
+  // Remove a day from trip
+  const removeDayFromTrip = (tripId, dayIndex) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip) return;
+
+    if (targetTrip.days.length <= 1) {
+      addToast('Itinerary must have at least one day', 'warning');
+      return;
+    }
+
+    const filtered = targetTrip.days.filter((_, idx) => idx !== dayIndex);
+    // Renumber days
+    const renumbered = filtered.map((day, idx) => ({
+      ...day,
+      dayNumber: idx + 1
+    }));
+
+    updateTrip(tripId, { days: renumbered });
+    addToast('Day removed from itinerary', 'info');
+  };
+
+  return (
+    <TripContext.Provider
+      value={{
+        trips,
+        activeTripId,
+        setActiveTripId,
+        activeTrip,
+        activeTripDestinations,
+        activeTripBudget,
+        activeTripBudgetBreakdown,
+        createTrip,
+        deleteTrip,
+        updateTrip,
+        addDestinationToTrip,
+        removeDestinationFromTrip,
+        addActivityToDay,
+        removeActivityFromDay,
+        reorderDayActivities,
+        addDayToTrip,
+        removeDayFromTrip,
+        isTripDrawerOpen,
+        openTripDrawer: () => setIsTripDrawerOpen(true),
+        closeTripDrawer: () => setIsTripDrawerOpen(false),
+      }}
+    >
+      {children}
+    </TripContext.Provider>
+  );
+}
+
+export function useTrip() {
+  const context = useContext(TripContext);
+  if (!context) {
+    throw new Error('useTrip must be used within a TripProvider');
+  }
+  return context;
+}
