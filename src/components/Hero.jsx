@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Link, useNavigate } from 'react-router-dom';
-import { Compass, Calendar, ArrowRight, CloudSun, ChevronDown } from 'lucide-react';
+import { Compass, ArrowRight, CloudSun } from 'lucide-react';
 import { destinations } from '../data/destinations';
 
 export default function Hero({ onPlanTripClick = null }) {

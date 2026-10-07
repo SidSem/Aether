@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import DestinationHero from '../components/DestinationHero';
 import SectionHeader from '../components/SectionHeader';
@@ -17,22 +17,18 @@ import {
   DollarSign,
   Clock,
   CloudSun,
-  Globe,
   Languages,
   Sparkles,
   ChevronLeft,
   ChevronRight,
   X,
-  Plus,
-  ArrowRight,
-  Compass
+  Plus
 } from 'lucide-react';
 
 export default function DestinationDetails() {
   const { id } = useParams();
-  const navigate = useNavigate();
   const { currency } = useApp();
-  const { addDestinationToTrip, activeTrip } = useTrip();
+  const { activeTrip } = useTrip();
 
   const [tripBuilderOpen, setTripBuilderOpen] = useState(false);
   const [selectedActivity, setSelectedActivity] = useState(null);

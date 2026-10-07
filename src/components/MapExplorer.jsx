@@ -1,11 +1,11 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
 import MapMarker from './MapMarker';
 import { destinations } from '../data/destinations';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
-import { Plus, ArrowUpRight, Compass, ZoomIn, ZoomOut, RotateCcw, CloudSun, Star } from 'lucide-react';
+import { Plus, ArrowUpRight, ZoomIn, ZoomOut, RotateCcw, CloudSun, Star } from 'lucide-react';
 
 // Continent ViewBox presets for quick zoom
 const REGION_VIEWS = {

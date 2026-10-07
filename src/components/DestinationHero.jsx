@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Heart, Plus, Share2, Star, Calendar, MapPin, DollarSign, Clock, Check } from 'lucide-react';
+import { Heart, Plus, Share2, Star, MapPin } from 'lucide-react';
 import { useSaved } from '../context/SavedContext';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';

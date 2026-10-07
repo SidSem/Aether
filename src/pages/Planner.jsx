@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import SectionHeader from '../components/SectionHeader';
 import ItineraryDay from '../components/ItineraryDay';
 import BudgetBreakdown from '../components/BudgetBreakdown';
 import BudgetCard from '../components/BudgetCard';
@@ -8,7 +6,6 @@ import Modal from '../components/Modal';
 import { useTrip } from '../context/TripContext';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
-import { destinations } from '../data/destinations';
 import { activities as allActivities } from '../data/activities';
 import {
   Calendar,
@@ -18,9 +15,7 @@ import {
   MapPin,
   Trash2,
   Share2,
-  Download,
-  Sparkles,
-  ChevronDown
+  Sparkles
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -112,7 +107,7 @@ export default function Planner() {
         spread: 70,
         origin: { y: 0.6 }
       });
-    } catch (e) {}
+    } catch (_e) {}
     setExportModalOpen(true);
   };
 

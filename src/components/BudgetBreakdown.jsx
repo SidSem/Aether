@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { BUDGET_CATEGORIES } from '../utils/calculateBudget';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
-import { Users, Sparkles, Sliders } from 'lucide-react';
+import { Users } from 'lucide-react';
 
 export default function BudgetBreakdown({
   totalBudget = 100000,
   travelers = 2,
   onUpdateTravelers = null,
   breakdown = {},
-  onUpdateCategoryRatio = null
+  _onUpdateCategoryRatio = null
 }) {
   const { currency } = useApp();
   const [activeCategory, setActiveCategory] = useState(null);
@@ -17,23 +17,25 @@ export default function BudgetBreakdown({
   // SVG Donut calculation
   const radius = 70;
   const circumference = 2 * Math.PI * radius;
-  let accumulatedOffset = 0;
 
-  const donutSegments = BUDGET_CATEGORIES.map((cat) => {
-    const amount = breakdown[cat.key] || 0;
-    const percentage = totalBudget > 0 ? (amount / totalBudget) : 0;
-    const strokeDasharray = `${percentage * circumference} ${circumference}`;
-    const strokeDashoffset = -accumulatedOffset;
-    accumulatedOffset += percentage * circumference;
+  const donutSegments = React.useMemo(() => {
+    let accOffset = 0;
+    return BUDGET_CATEGORIES.map((cat) => {
+      const amount = breakdown[cat.key] || 0;
+      const percentage = totalBudget > 0 ? (amount / totalBudget) : 0;
+      const strokeDasharray = `${percentage * circumference} ${circumference}`;
+      const strokeDashoffset = -accOffset;
+      accOffset += percentage * circumference;
 
-    return {
-      ...cat,
-      amount,
-      percentage: Math.round(percentage * 100),
-      strokeDasharray,
-      strokeDashoffset
-    };
-  });
+      return {
+        ...cat,
+        amount,
+        percentage: Math.round(percentage * 100),
+        strokeDasharray,
+        strokeDashoffset
+      };
+    });
+  }, [breakdown, totalBudget, circumference]);
 
   const perPersonCost = Math.round(totalBudget / Math.max(1, travelers));
 

@@ -14,8 +14,7 @@ import { curatedJourneys } from '../data/journeys';
 import { journalArticles } from '../data/journal';
 import { useTrip } from '../context/TripContext';
 import { useApp } from '../context/AppContext';
-import { formatCurrency } from '../utils/formatCurrency';
-import { ArrowRight, Compass, Sparkles, MapPin, Calendar, Clock, BookOpen, Check } from 'lucide-react';
+import { ArrowRight, Compass, Sparkles, MapPin, Clock, Check } from 'lucide-react';
 
 export default function Home() {
   const navigate = useNavigate();
@@ -93,7 +92,7 @@ export default function Home() {
           />
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {categories.map((cat, idx) => (
+            {categories.map((cat) => (
               <motion.div
                 key={cat.id}
                 whileHover={{ y: -6, scale: 1.02 }}

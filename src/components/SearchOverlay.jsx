@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, X, MapPin, Compass, ArrowRight, History, Star } from 'lucide-react';
+import { Search, X, MapPin, Compass, ArrowRight, History } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { useDebounce } from '../hooks/useDebounce';
@@ -21,10 +21,13 @@ export default function SearchOverlay() {
   useEffect(() => {
     if (isSearchOpen) {
       document.body.style.overflow = 'hidden';
-      setTimeout(() => inputRef.current?.focus(), 80);
+      const timer = setTimeout(() => inputRef.current?.focus(), 80);
+      return () => {
+        clearTimeout(timer);
+        document.body.style.overflow = 'unset';
+      };
     } else {
       document.body.style.overflow = 'unset';
-      setSearchTerm('');
     }
   }, [isSearchOpen]);
 

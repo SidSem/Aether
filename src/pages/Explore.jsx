@@ -10,7 +10,7 @@ import CategoryPill from '../components/CategoryPill';
 import { destinations } from '../data/destinations';
 import { filterAndSortDestinations } from '../utils/filterDestinations';
 import { travelStyles } from '../data/categories';
-import { ArrowUpDown, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { ArrowUpDown } from 'lucide-react';
 
 export default function Explore() {
   const [searchParams, setSearchParams] = useSearchParams();
@@ -37,8 +37,8 @@ export default function Explore() {
   // Sync when searchParams change
   useEffect(() => {
     const styleFromQuery = searchParams.get('style');
-    if (styleFromQuery && styleFromQuery !== filters.travelStyle) {
-      setFilters((prev) => ({ ...prev, travelStyle: styleFromQuery }));
+    if (styleFromQuery) {
+      setFilters((prev) => (prev.travelStyle !== styleFromQuery ? { ...prev, travelStyle: styleFromQuery } : prev));
     }
   }, [searchParams]);
 

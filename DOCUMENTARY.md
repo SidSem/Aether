@@ -114,11 +114,12 @@
 git init
 git branch -M main
 git remote add origin https://github.com/SidSem/Aether.git
-
-# Stage and commit Day 1 foundation
 git add .
 git commit -m "Day 1: Project setup, architecture & git repository initialization"
-
-# Push to GitHub
 git push -u origin main
+
+# Day 2: Discovery Engine & Destination Showcase
+git add .
+git commit -m "Day 2: Discovery Engine & Destination showcase catalog"
+git push origin main
 ```

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Trash2, Plus, ArrowUpRight, Star, Scale, Check } from 'lucide-react';
+import { Trash2, Plus, Star, Scale } from 'lucide-react';
 import { useSaved } from '../context/SavedContext';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';

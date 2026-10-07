@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import SectionHeader from '../components/SectionHeader';
 import Modal from '../components/Modal';
 import { useApp } from '../context/AppContext';
@@ -19,7 +19,6 @@ import {
 } from 'lucide-react';
 
 export default function Compare() {
-  const navigate = useNavigate();
   const { compareIds, removeFromCompare, addToCompare, currency } = useApp();
   const [selectModalOpen, setSelectModalOpen] = useState(false);
 

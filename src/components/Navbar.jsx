@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Compass,
@@ -22,11 +22,10 @@ import { CURRENCIES } from '../utils/formatCurrency';
 
 export default function Navbar() {
   const location = useLocation();
-  const navigate = useNavigate();
   const { isScrolled } = useScrollDirection();
   const { theme, toggleTheme, currency, setCurrency, openSearch } = useApp();
   const { savedCount } = useSaved();
-  const { activeTrip, openTripDrawer } = useTrip();
+  const { activeTrip } = useTrip();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [currencyDropdownOpen, setCurrencyDropdownOpen] = useState(false);
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronUp, Sparkles } from 'lucide-react';
+import { MapPin, Plus, Trash2, ArrowUp, ArrowDown, ChevronDown, ChevronUp } from 'lucide-react';
 import ActivityCard from './ActivityCard';
 import { destinations } from '../data/destinations';
 import { activities as allActivities } from '../data/activities';
@@ -12,7 +12,7 @@ export default function ItineraryDay({
   dayIndex,
   totalDays,
   onRemoveDay,
-  onAddActivity,
+  _onAddActivity,
   onRemoveActivity,
   onMoveActivityUp,
   onMoveActivityDown,

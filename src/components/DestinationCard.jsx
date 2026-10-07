@@ -1,7 +1,7 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
-import { Heart, Star, Clock, ArrowUpRight, Plus, Check } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { Heart, Star, ArrowUpRight, Plus, Check } from 'lucide-react';
 import { useSaved } from '../context/SavedContext';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';

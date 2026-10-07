@@ -1,5 +1,5 @@
 import React from 'react';
-import { DollarSign, TrendingUp, ShieldCheck } from 'lucide-react';
+import { TrendingUp } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
 

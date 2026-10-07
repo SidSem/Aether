@@ -1,5 +1,5 @@
 import React from 'react';
-import { Clock, Tag, X, Plus } from 'lucide-react';
+import { Clock, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
 

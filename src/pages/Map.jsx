@@ -8,10 +8,8 @@ import { continents, travelStyles } from '../data/categories';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
 import { Compass, MapPin, SlidersHorizontal, Star, ArrowUpRight } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 
 export default function MapPage() {
-  const navigate = useNavigate();
   const { currency } = useApp();
   const [search, setSearch] = useState('');
   const [selectedContinent, setSelectedContinent] = useState('All Continents');

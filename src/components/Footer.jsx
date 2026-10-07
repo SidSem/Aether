@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Compass, Send, Heart, ArrowUpRight, CheckCircle2 } from 'lucide-react';
+import { Compass, Send, CheckCircle2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function Footer() {
