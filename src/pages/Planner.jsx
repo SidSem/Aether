@@ -35,8 +35,11 @@ export default function Planner() {
     addDayToTrip,
     removeDayFromTrip,
     addActivityToDay,
+    addCustomActivityToDay,
     removeActivityFromDay,
-    reorderDayActivities
+    reorderDayActivities,
+    setActivitySlot,
+    updateDayTitle
   } = useTrip();
 
   const { currency, addToast } = useApp();
@@ -48,8 +51,19 @@ export default function Planner() {
   const [newTripStartDate, setNewTripStartDate] = useState('');
 
   // Activity picker modal state
-  const [activityPickerState, setActivityPickerState] = useState(null); // { dayIndex, destinationId }
+  const [activityPickerState, setActivityPickerState] = useState(null); // { dayIndex, destinationId, preferredSlot }
   const [exportModalOpen, setExportModalOpen] = useState(false);
+
+  // Custom Event modal state
+  const [customEventModalState, setCustomEventModalState] = useState(null); // { dayIndex, destinationId }
+  const [customEventForm, setCustomEventForm] = useState({
+    title: '',
+    slot: 'morning',
+    category: 'Sightseeing',
+    duration: '2 hrs',
+    price: 0,
+    description: ''
+  });
 
   // Trip switcher handler
   const handleSelectTrip = (id) => {
@@ -71,15 +85,56 @@ export default function Planner() {
     setNewTripModalOpen(false);
   };
 
-  const handleOpenActivitySelector = (dayIndex, destinationId) => {
-    setActivityPickerState({ dayIndex, destinationId });
+  const handleOpenActivitySelector = (dayIndex, destinationId, preferredSlot = 'morning') => {
+    setActivityPickerState({ dayIndex, destinationId, preferredSlot });
   };
 
   const handleSelectActivityForDay = (actId) => {
     if (activityPickerState) {
-      addActivityToDay(activeTrip.id, activityPickerState.dayIndex, actId);
+      addActivityToDay(
+        activeTrip.id,
+        activityPickerState.dayIndex,
+        actId,
+        activityPickerState.preferredSlot || 'morning'
+      );
       setActivityPickerState(null);
     }
+  };
+
+  const handleOpenCustomEventModal = (dayIndex, destinationId, slot = 'morning') => {
+    setCustomEventForm({
+      title: '',
+      slot,
+      category: 'Sightseeing',
+      duration: '2 hrs',
+      price: 0,
+      description: ''
+    });
+    setCustomEventModalState({ dayIndex, destinationId });
+  };
+
+  const handleCreateCustomEventSubmit = (e) => {
+    e.preventDefault();
+    if (!customEventForm.title.trim() || !customEventModalState) return;
+
+    addCustomActivityToDay(activeTrip.id, customEventModalState.dayIndex, {
+      title: customEventForm.title.trim(),
+      timeOfDay: customEventForm.slot,
+      category: customEventForm.category,
+      duration: customEventForm.duration || '2 hrs',
+      price: Number(customEventForm.price) || 0,
+      description: customEventForm.description.trim()
+    });
+
+    setCustomEventModalState(null);
+  };
+
+  const handleSetActivitySlot = (dayIndex, actId, slot) => {
+    setActivitySlot(activeTrip.id, dayIndex, actId, slot);
+  };
+
+  const handleUpdateDayTitle = (dayIndex, newTitle) => {
+    updateDayTitle(activeTrip.id, dayIndex, newTitle);
   };
 
   const handleMoveActivityUp = (dayIndex, actIndex) => {
@@ -107,7 +162,7 @@ export default function Planner() {
         spread: 70,
         origin: { y: 0.6 }
       });
-    } catch (_e) {}
+    } catch {}
     setExportModalOpen(true);
   };
 
@@ -292,6 +347,9 @@ export default function Planner() {
                   onMoveActivityUp={handleMoveActivityUp}
                   onMoveActivityDown={handleMoveActivityDown}
                   onOpenActivitySelector={handleOpenActivitySelector}
+                  onOpenCustomEventModal={handleOpenCustomEventModal}
+                  onSetActivitySlot={handleSetActivitySlot}
+                  onUpdateDayTitle={handleUpdateDayTitle}
                 />
               ))}
             </div>
@@ -455,6 +513,128 @@ export default function Planner() {
           </div>
         </form>
       </Modal>
+
+      {/* Add Custom Event Modal */}
+      {customEventModalState && (
+        <Modal
+          isOpen={Boolean(customEventModalState)}
+          onClose={() => setCustomEventModalState(null)}
+          title={`Custom Event for Day ${customEventModalState.dayIndex + 1}`}
+          subtitle="Schedule a personalized experience, reservation, or transit."
+          maxWidth="max-w-md"
+        >
+          <form onSubmit={handleCreateCustomEventSubmit} className="space-y-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Event Title *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="e.g. Sunset Rooftop Aperitivo at Positano"
+                value={customEventForm.title}
+                onChange={(e) => setCustomEventForm({ ...customEventForm, title: e.target.value })}
+                className="w-full px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-sm text-aether-textMain dark:text-white focus:outline-none focus:border-secondary"
+                autoFocus
+              />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Time of Day
+                </label>
+                <select
+                  value={customEventForm.slot}
+                  onChange={(e) => setCustomEventForm({ ...customEventForm, slot: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-xs text-aether-textMain dark:text-white focus:outline-none focus:border-secondary"
+                >
+                  <option value="morning">🌅 Morning</option>
+                  <option value="afternoon">☀️ Afternoon</option>
+                  <option value="evening">🌙 Evening</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Category
+                </label>
+                <select
+                  value={customEventForm.category}
+                  onChange={(e) => setCustomEventForm({ ...customEventForm, category: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-xs text-aether-textMain dark:text-white focus:outline-none focus:border-secondary"
+                >
+                  <option value="Sightseeing">Sightseeing</option>
+                  <option value="Dining">Dining</option>
+                  <option value="Culture">Culture</option>
+                  <option value="Adventure">Adventure</option>
+                  <option value="Leisure">Leisure</option>
+                  <option value="Transport">Transport</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Duration
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. 2 hrs"
+                  value={customEventForm.duration}
+                  onChange={(e) => setCustomEventForm({ ...customEventForm, duration: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-xs text-aether-textMain dark:text-white focus:outline-none focus:border-secondary"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                  Cost per person
+                </label>
+                <input
+                  type="number"
+                  min="0"
+                  step="100"
+                  placeholder="0"
+                  value={customEventForm.price}
+                  onChange={(e) => setCustomEventForm({ ...customEventForm, price: e.target.value })}
+                  className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-xs text-aether-textMain dark:text-white focus:outline-none focus:border-secondary"
+                />
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+                Description / Notes
+              </label>
+              <textarea
+                rows="2"
+                placeholder="Optional reservation details, location, or notes..."
+                value={customEventForm.description}
+                onChange={(e) => setCustomEventForm({ ...customEventForm, description: e.target.value })}
+                className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-transparent text-xs text-aether-textMain dark:text-white focus:outline-none focus:border-secondary resize-none"
+              />
+            </div>
+
+            <div className="pt-2 flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setCustomEventModalState(null)}
+                className="flex-1 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="flex-1 py-2.5 rounded-xl bg-secondary text-white text-xs font-bold uppercase tracking-wider shadow"
+              >
+                Add to Itinerary
+              </button>
+            </div>
+          </form>
+        </Modal>
+      )}
 
       {/* Export / Share Modal */}
       <Modal

@@ -19,22 +19,24 @@ export default function BudgetBreakdown({
   const circumference = 2 * Math.PI * radius;
 
   const donutSegments = React.useMemo(() => {
-    let accOffset = 0;
-    return BUDGET_CATEGORIES.map((cat) => {
+    let accumulated = 0;
+    const segments = [];
+    for (const cat of BUDGET_CATEGORIES) {
       const amount = breakdown[cat.key] || 0;
       const percentage = totalBudget > 0 ? (amount / totalBudget) : 0;
       const strokeDasharray = `${percentage * circumference} ${circumference}`;
-      const strokeDashoffset = -accOffset;
-      accOffset += percentage * circumference;
+      const strokeDashoffset = -accumulated;
+      accumulated += percentage * circumference;
 
-      return {
+      segments.push({
         ...cat,
         amount,
         percentage: Math.round(percentage * 100),
         strokeDasharray,
         strokeDashoffset
-      };
-    });
+      });
+    }
+    return segments;
   }, [breakdown, totalBudget, circumference]);
 
   const perPersonCost = Math.round(totalBudget / Math.max(1, travelers));

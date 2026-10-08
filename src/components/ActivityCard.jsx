@@ -1,15 +1,25 @@
 import React from 'react';
-import { Clock, X } from 'lucide-react';
+import { Clock, X, Sparkles, Sun, Sunrise, Moon } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
 
+const SLOT_CONFIG = {
+  morning: { label: 'Morning', icon: Sunrise, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800' },
+  afternoon: { label: 'Afternoon', icon: Sun, color: 'text-orange-500 bg-orange-50 dark:bg-orange-950/40 border-orange-200 dark:border-orange-800' },
+  evening: { label: 'Evening', icon: Moon, color: 'text-indigo-500 bg-indigo-50 dark:bg-indigo-950/40 border-indigo-200 dark:border-indigo-800' },
+};
+
 export default function ActivityCard({
   activity,
+  timeSlot = null,
+  onChangeSlot = null,
   onRemove = null,
   onSelect = null,
   compact = false
 }) {
   const { currency } = useApp();
+  const slotData = timeSlot ? SLOT_CONFIG[timeSlot] || SLOT_CONFIG.morning : null;
+  const SlotIcon = slotData?.icon || Sunrise;
 
   return (
     <div
@@ -29,10 +39,44 @@ export default function ActivityCard({
           )}
 
           <div className="flex-1 min-w-0">
-            <h4 className="font-bold text-xs sm:text-sm text-aether-textMain dark:text-white truncate">
-              {activity.title}
-            </h4>
-            <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-0.5">
+            <div className="flex items-center gap-2 flex-wrap">
+              <h4 className="font-bold text-xs sm:text-sm text-aether-textMain dark:text-white truncate">
+                {activity.title}
+              </h4>
+              {activity.isCustom && (
+                <span className="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[9px] font-bold uppercase tracking-wider bg-secondary/10 text-secondary border border-secondary/20">
+                  <Sparkles className="w-2.5 h-2.5" /> Custom
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2 text-[11px] text-slate-400 mt-1 flex-wrap">
+              {slotData && (
+                <div className="inline-flex items-center gap-1">
+                  {onChangeSlot ? (
+                    <select
+                      value={timeSlot || 'morning'}
+                      onClick={(e) => e.stopPropagation()}
+                      onChange={(e) => {
+                        e.stopPropagation();
+                        onChangeSlot(e.target.value);
+                      }}
+                      className="px-1.5 py-0.5 rounded text-[10px] font-semibold border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-aether-textMain dark:text-white focus:outline-none cursor-pointer"
+                    >
+                      <option value="morning">🌅 Morning</option>
+                      <option value="afternoon">☀️ Afternoon</option>
+                      <option value="evening">🌙 Evening</option>
+                    </select>
+                  ) : (
+                    <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] font-semibold border ${slotData.color}`}>
+                      <SlotIcon className="w-2.5 h-2.5" />
+                      {slotData.label}
+                    </span>
+                  )}
+                  <span>·</span>
+                </div>
+              )}
+
               <span className="inline-flex items-center gap-1">
                 <Clock className="w-3 h-3" />
                 {activity.duration}
@@ -70,6 +114,11 @@ export default function ActivityCard({
               <span className="absolute top-2.5 right-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-black/50 text-white backdrop-blur-md">
                 {activity.category}
               </span>
+              {activity.isCustom && (
+                <span className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-secondary text-white shadow">
+                  Custom
+                </span>
+              )}
             </div>
           )}
 
@@ -99,3 +148,4 @@ export default function ActivityCard({
     </div>
   );
 }
+

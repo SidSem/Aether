@@ -122,4 +122,10 @@ git push -u origin main
 git add .
 git commit -m "Day 2: Discovery Engine & Destination showcase catalog"
 git push origin main
+
+# Day 3: Itinerary Planner & Budget Intelligence
+git add .
+git commit -m "Day 3: Itinerary Planner & Budget Intelligence"
+git push origin main
 ```
+

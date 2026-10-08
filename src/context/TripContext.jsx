@@ -1,11 +1,24 @@
 import React, { createContext, useContext, useMemo, useState } from 'react';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import { destinations } from '../data/destinations';
-import { activities as allActivities } from '../data/activities';
+import { activities as curatedActivities } from '../data/activities';
 import { useApp } from './AppContext';
 import { estimateTripBudget, calculateBudgetBreakdown, DEFAULT_BUDGET_RATIOS } from '../utils/calculateBudget';
 
 const TripContext = createContext();
+
+export function inferTimeOfDay(activity) {
+  if (!activity) return 'morning';
+  if (activity.timeOfDay) return activity.timeOfDay;
+  const text = `${activity.title || ''} ${activity.description || ''}`.toLowerCase();
+  if (text.includes('sunrise') || text.includes('morning') || text.includes('breakfast') || text.includes('early')) {
+    return 'morning';
+  }
+  if (text.includes('sunset') || text.includes('night') || text.includes('evening') || text.includes('dinner') || text.includes('bar')) {
+    return 'evening';
+  }
+  return 'afternoon';
+}
 
 const SEED_TRIPS = [
   {
@@ -22,31 +35,36 @@ const SEED_TRIPS = [
         dayNumber: 1,
         title: "Arrival in Tokyo & Shibuya Sunset",
         destinationId: 7,
-        activityIds: ["act-18"]
+        activityIds: ["act-18"],
+        activitySlots: { "act-18": "evening" }
       },
       {
         dayNumber: 2,
         title: "Digital Art & Shinjuku Nightlife",
         destinationId: 7,
-        activityIds: ["act-17"]
+        activityIds: ["act-17"],
+        activitySlots: { "act-17": "afternoon" }
       },
       {
         dayNumber: 3,
         title: "Bullet Train Shinkansen to Kyoto",
         destinationId: 1,
-        activityIds: ["act-4"]
+        activityIds: ["act-4"],
+        activitySlots: { "act-4": "morning" }
       },
       {
         dayNumber: 4,
         title: "Sacred Torii Gates & Tea Tradition",
         destinationId: 1,
-        activityIds: ["act-1", "act-2"]
+        activityIds: ["act-1", "act-2"],
+        activitySlots: { "act-1": "morning", "act-2": "afternoon" }
       },
       {
         dayNumber: 5,
         title: "Arashiyama Bamboo Forest Serenity",
         destinationId: 1,
-        activityIds: ["act-3"]
+        activityIds: ["act-3"],
+        activitySlots: { "act-3": "morning" }
       }
     ]
   },
@@ -64,31 +82,36 @@ const SEED_TRIPS = [
         dayNumber: 1,
         title: "Arrival on the Amalfi Coast",
         destinationId: 2,
-        activityIds: ["act-7"]
+        activityIds: ["act-7"],
+        activitySlots: { "act-7": "afternoon" }
       },
       {
         dayNumber: 2,
         title: "Path of the Gods Clifftop Trek",
         destinationId: 2,
-        activityIds: ["act-5"]
+        activityIds: ["act-5"],
+        activitySlots: { "act-5": "morning" }
       },
       {
         dayNumber: 3,
         title: "Wooden Boat Sail to Capri Island",
         destinationId: 2,
-        activityIds: ["act-6"]
+        activityIds: ["act-6"],
+        activitySlots: { "act-6": "afternoon" }
       },
       {
         dayNumber: 4,
         title: "Ferry to Santorini & Oia Sunset",
         destinationId: 4,
-        activityIds: ["act-12"]
+        activityIds: ["act-12"],
+        activitySlots: { "act-12": "evening" }
       },
       {
         dayNumber: 5,
         title: "Caldera Ridge Walk to Fira",
         destinationId: 4,
-        activityIds: ["act-11"]
+        activityIds: ["act-11"],
+        activitySlots: { "act-11": "morning" }
       }
     ]
   }
@@ -96,9 +119,19 @@ const SEED_TRIPS = [
 
 export function TripProvider({ children }) {
   const [trips, setTrips] = useLocalStorage('aether_user_trips', SEED_TRIPS);
+  const [customActivities, setCustomActivities] = useLocalStorage('aether_custom_activities', []);
   const [activeTripId, setActiveTripId] = useLocalStorage('aether_active_trip_id', SEED_TRIPS[0].id);
   const [isTripDrawerOpen, setIsTripDrawerOpen] = useState(false);
   const { addToast } = useApp();
+
+  // Combine curated and user-created activities
+  const allAvailableActivities = useMemo(() => {
+    return [...curatedActivities, ...customActivities];
+  }, [customActivities]);
+
+  const getActivityById = (id) => {
+    return allAvailableActivities.find((a) => a.id === id) || null;
+  };
 
   // Retrieve active trip object
   const activeTrip = useMemo(() => {
@@ -113,13 +146,24 @@ export function TripProvider({ children }) {
       .filter(Boolean);
   }, [activeTrip]);
 
-  // Compute active trip budget
+  // Compute active trip budget including daily base estimate + scheduled activities
   const activeTripBudget = useMemo(() => {
     if (!activeTrip) return 0;
     if (activeTrip.budgetOverride) return activeTrip.budgetOverride;
     const daysCount = activeTrip.days?.length || 5;
-    return estimateTripBudget(activeTripDestinations, daysCount, activeTrip.travelers || 1);
-  }, [activeTrip, activeTripDestinations]);
+    const baseBudget = estimateTripBudget(activeTripDestinations, daysCount, activeTrip.travelers || 1);
+    
+    // Add total activity prices for all travelers
+    const scheduledActivityCost = (activeTrip.days || []).reduce((dayAcc, day) => {
+      const dayTotal = (day.activityIds || []).reduce((actAcc, actId) => {
+        const act = allAvailableActivities.find((a) => a.id === actId);
+        return actAcc + (act?.price || 0) * (activeTrip.travelers || 1);
+      }, 0);
+      return dayAcc + dayTotal;
+    }, 0);
+
+    return baseBudget + scheduledActivityCost;
+  }, [activeTrip, activeTripDestinations, allAvailableActivities]);
 
   // Compute active trip budget breakdown
   const activeTripBudgetBreakdown = useMemo(() => {
@@ -150,19 +194,22 @@ export function TripProvider({ children }) {
         dayNumber: 1,
         title: "Arrival & Orientation",
         destinationId: initialDest[0],
-        activityIds: []
+        activityIds: [],
+        activitySlots: {}
       },
       {
         dayNumber: 2,
         title: "Discovery & Local Culture",
         destinationId: initialDest[0],
-        activityIds: []
+        activityIds: [],
+        activitySlots: {}
       },
       {
         dayNumber: 3,
         title: "Hidden Gems & Leisure",
         destinationId: initialDest[0],
-        activityIds: []
+        activityIds: [],
+        activitySlots: {}
       }
     ];
 
@@ -217,7 +264,8 @@ export function TripProvider({ children }) {
       dayNumber: newDayNumber,
       title: `Explore ${dest ? dest.name : 'New Destination'}`,
       destinationId,
-      activityIds: []
+      activityIds: [],
+      activitySlots: {}
     };
 
     updateTrip(tripId, {
@@ -258,7 +306,7 @@ export function TripProvider({ children }) {
   };
 
   // Add activity to specific day
-  const addActivityToDay = (tripId, dayIndex, activityId) => {
+  const addActivityToDay = (tripId, dayIndex, activityId, preferredSlot = null) => {
     const targetTrip = trips.find((t) => t.id === tripId);
     if (!targetTrip || !targetTrip.days[dayIndex]) return;
 
@@ -268,15 +316,91 @@ export function TripProvider({ children }) {
       return;
     }
 
+    const foundAct = allAvailableActivities.find((a) => a.id === activityId);
+    const slot = preferredSlot || inferTimeOfDay(foundAct);
+
     const updatedDays = [...targetTrip.days];
+    const currentSlots = updatedDays[dayIndex].activitySlots || {};
     updatedDays[dayIndex] = {
       ...updatedDays[dayIndex],
-      activityIds: [...currentActivities, activityId]
+      activityIds: [...currentActivities, activityId],
+      activitySlots: {
+        ...currentSlots,
+        [activityId]: slot
+      }
     };
 
     updateTrip(tripId, { days: updatedDays });
-    const act = allActivities.find((a) => a.id === activityId);
-    addToast(`Added "${act?.title || 'Activity'}" to Day ${dayIndex + 1}`, 'success');
+    addToast(`Added "${foundAct?.title || 'Activity'}" to Day ${dayIndex + 1}`, 'success');
+  };
+
+  // Add custom event directly to day
+  const addCustomActivityToDay = (tripId, dayIndex, customData) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip || !targetTrip.days[dayIndex]) return;
+
+    const customId = `custom-act-${Date.now()}`;
+    const newCustomActivity = {
+      id: customId,
+      destinationId: targetTrip.days[dayIndex].destinationId,
+      title: customData.title || "Custom Adventure",
+      duration: customData.duration || "2 hrs",
+      price: Number(customData.price) || 0,
+      category: customData.category || "Sightseeing",
+      description: customData.description || "Custom planned experience",
+      timeOfDay: customData.timeOfDay || "morning",
+      isCustom: true,
+      image: customData.image || "https://images.unsplash.com/photo-1488646953014-85cb44e25828?q=80&w=800&auto=format&fit=crop"
+    };
+
+    // Save custom activity
+    setCustomActivities((prev) => [newCustomActivity, ...prev]);
+
+    // Attach to day
+    const currentDay = targetTrip.days[dayIndex];
+    const updatedDays = [...targetTrip.days];
+    updatedDays[dayIndex] = {
+      ...currentDay,
+      activityIds: [...(currentDay.activityIds || []), customId],
+      activitySlots: {
+        ...(currentDay.activitySlots || {}),
+        [customId]: newCustomActivity.timeOfDay
+      }
+    };
+
+    updateTrip(tripId, { days: updatedDays });
+    addToast(`Added custom event "${newCustomActivity.title}" to Day ${dayIndex + 1}`, 'success');
+  };
+
+  // Change activity time-of-day slot
+  const setActivitySlot = (tripId, dayIndex, activityId, slot) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip || !targetTrip.days[dayIndex]) return;
+
+    const updatedDays = [...targetTrip.days];
+    updatedDays[dayIndex] = {
+      ...updatedDays[dayIndex],
+      activitySlots: {
+        ...(updatedDays[dayIndex].activitySlots || {}),
+        [activityId]: slot
+      }
+    };
+
+    updateTrip(tripId, { days: updatedDays });
+  };
+
+  // Update day title
+  const updateDayTitle = (tripId, dayIndex, newTitle) => {
+    const targetTrip = trips.find((t) => t.id === tripId);
+    if (!targetTrip || !targetTrip.days[dayIndex]) return;
+
+    const updatedDays = [...targetTrip.days];
+    updatedDays[dayIndex] = {
+      ...updatedDays[dayIndex],
+      title: newTitle
+    };
+
+    updateTrip(tripId, { days: updatedDays });
   };
 
   // Remove activity from specific day
@@ -285,9 +409,13 @@ export function TripProvider({ children }) {
     if (!targetTrip || !targetTrip.days[dayIndex]) return;
 
     const updatedDays = [...targetTrip.days];
+    const updatedSlots = { ...(updatedDays[dayIndex].activitySlots || {}) };
+    delete updatedSlots[activityId];
+
     updatedDays[dayIndex] = {
       ...updatedDays[dayIndex],
-      activityIds: (updatedDays[dayIndex].activityIds || []).filter((id) => id !== activityId)
+      activityIds: (updatedDays[dayIndex].activityIds || []).filter((id) => id !== activityId),
+      activitySlots: updatedSlots
     };
 
     updateTrip(tripId, { days: updatedDays });
@@ -321,7 +449,8 @@ export function TripProvider({ children }) {
       dayNumber: newDayNumber,
       title: `Day in ${dest?.name || 'Paradise'}`,
       destinationId: destId,
-      activityIds: []
+      activityIds: [],
+      activitySlots: {}
     };
 
     updateTrip(tripId, {
@@ -361,14 +490,19 @@ export function TripProvider({ children }) {
         activeTripDestinations,
         activeTripBudget,
         activeTripBudgetBreakdown,
+        allAvailableActivities,
+        getActivityById,
         createTrip,
         deleteTrip,
         updateTrip,
         addDestinationToTrip,
         removeDestinationFromTrip,
         addActivityToDay,
+        addCustomActivityToDay,
         removeActivityFromDay,
         reorderDayActivities,
+        setActivitySlot,
+        updateDayTitle,
         addDayToTrip,
         removeDayFromTrip,
         isTripDrawerOpen,
@@ -388,3 +522,4 @@ export function useTrip() {
   }
   return context;
 }
+
