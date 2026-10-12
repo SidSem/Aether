@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import Modal from './Modal';
 import { useTrip } from '../context/TripContext';
-import { Plus, Check, Calendar, Users, MapPin } from 'lucide-react';
+import { Plus, Check, Calendar, MapPin } from 'lucide-react';
 
 export default function TripBuilder({
   isOpen,
@@ -27,7 +27,7 @@ export default function TripBuilder({
     if (!newTripName.trim()) return;
 
     const initialDestIds = destinationToAdd ? [destinationToAdd.id] : [];
-    const created = createTrip({
+    createTrip({
       name: newTripName.trim(),
       travelers: Number(newTripTravelers) || 2,
       startDate: newTripStartDate,

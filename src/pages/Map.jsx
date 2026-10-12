@@ -6,11 +6,13 @@ import SearchBar from '../components/SearchBar';
 import { destinations } from '../data/destinations';
 import { continents, travelStyles } from '../data/categories';
 import { useApp } from '../context/AppContext';
+import { useSaved } from '../context/SavedContext';
 import { formatCurrency } from '../utils/formatCurrency';
-import { Compass, MapPin, SlidersHorizontal, Star, ArrowUpRight } from 'lucide-react';
+import { Heart, Scale } from 'lucide-react';
 
 export default function MapPage() {
-  const { currency } = useApp();
+  const { currency, isInCompare, addToCompare, removeFromCompare } = useApp();
+  const { isSaved, toggleSaved } = useSaved();
   const [search, setSearch] = useState('');
   const [selectedContinent, setSelectedContinent] = useState('All Continents');
   const [selectedStyle, setSelectedStyle] = useState('All Styles');
@@ -39,23 +41,15 @@ export default function MapPage() {
   };
 
   return (
-    <div className="min-h-screen pt-24 pb-16 bg-aether-bgLight dark:bg-aether-bgDark">
+    <div className="min-h-screen pt-28 pb-16 bg-aether-bgLight dark:bg-aether-bgDark">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         
         {/* Header */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4">
-          <div>
-            <span className="text-xs font-bold uppercase tracking-widest text-secondary block mb-1">
-              Geographic Cartography
-            </span>
-            <h1 className="text-3xl sm:text-4xl font-extrabold font-heading text-aether-textMain dark:text-white">
-              INTERACTIVE WORLD MAP
-            </h1>
-            <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
-              Pulse markers pinpoint curated sanctuaries across 7 continents. Click any beacon to preview.
-            </p>
-          </div>
-        </div>
+        <SectionHeader
+          badge="Geographic Cartography"
+          title="INTERACTIVE WORLD MAP"
+          subtitle="Pulse markers pinpoint curated sanctuaries across 7 continents. Click any beacon to preview, compare, or bookmark."
+        />
 
         {/* 2-Column Explorer: Left Sidebar List + Right Full Map */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -102,6 +96,8 @@ export default function MapPage() {
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 pr-1">
               {filteredDestinations.map((dest) => {
                 const isFocused = focusedDestId === dest.id;
+                const saved = isSaved(dest.id);
+                const compared = isInCompare(dest.id);
 
                 return (
                   <div
@@ -129,13 +125,53 @@ export default function MapPage() {
                       </div>
                     </div>
 
-                    <div className="text-right shrink-0">
-                      <span className="text-xs font-bold text-secondary block">
-                        {formatCurrency(dest.averageDailyBudget, currency)}
-                      </span>
-                      <span className="text-[10px] text-slate-400">
-                        {dest.temperature}°C
-                      </span>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <div className="text-right">
+                        <span className="text-xs font-bold text-secondary block">
+                          {formatCurrency(dest.averageDailyBudget, currency)}
+                        </span>
+                        <span className="text-[10px] text-slate-400">
+                          {dest.temperature}°C
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-1 pl-1 border-l border-slate-200 dark:border-slate-700">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            toggleSaved(dest.id);
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            saved
+                              ? 'text-rose-500 bg-rose-50 dark:bg-rose-950/40'
+                              : 'text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                          title={saved ? 'Remove from Saved' : 'Save to Wishlist'}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${saved ? 'fill-rose-500' : ''}`} />
+                        </button>
+
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            if (compared) {
+                              removeFromCompare(dest.id);
+                            } else {
+                              addToCompare(dest.id);
+                            }
+                          }}
+                          className={`p-1.5 rounded-lg transition-colors ${
+                            compared
+                              ? 'text-secondary bg-secondary/15'
+                              : 'text-slate-400 hover:text-secondary hover:bg-slate-100 dark:hover:bg-slate-800'
+                          }`}
+                          title={compared ? 'Remove from Compare' : 'Add to Compare'}
+                        >
+                          <Scale className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 );
@@ -148,6 +184,7 @@ export default function MapPage() {
             <MapExplorer
               onAddToTrip={handleAddToTrip}
               selectedId={focusedDestId}
+              onSelectDestination={(dest) => setFocusedDestId(dest.id)}
             />
           </div>
         </div>

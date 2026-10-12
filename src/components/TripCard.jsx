@@ -1,13 +1,12 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Calendar, MapPin, ArrowRight, Sparkles } from 'lucide-react';
+import { MapPin, ArrowRight, Sparkles } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 import { formatCurrency } from '../utils/formatCurrency';
 
 export default function TripCard({
   journey,
-  onClick,
-  onAddToTrip = null
+  onClick
 }) {
   const { currency } = useApp();
 

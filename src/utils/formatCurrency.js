@@ -34,7 +34,7 @@ export function formatCurrency(amountInINR, currencyCode = 'INR') {
       currencyCode === 'INR' ? 'en-IN' : 'en-US', 
       { maximumFractionDigits: 0 }
     ).format(value);
-  } catch (e) {
+  } catch {
     formattedNumber = value.toLocaleString();
   }
 

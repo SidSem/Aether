@@ -4,8 +4,9 @@ import { useNavigate } from 'react-router-dom';
 import MapMarker from './MapMarker';
 import { destinations } from '../data/destinations';
 import { useApp } from '../context/AppContext';
+import { useSaved } from '../context/SavedContext';
 import { formatCurrency } from '../utils/formatCurrency';
-import { Plus, ArrowUpRight, ZoomIn, ZoomOut, RotateCcw, CloudSun, Star } from 'lucide-react';
+import { Plus, ArrowUpRight, ZoomIn, ZoomOut, RotateCcw, CloudSun, Star, Heart, Scale } from 'lucide-react';
 
 // Continent ViewBox presets for quick zoom
 const REGION_VIEWS = {
@@ -20,16 +21,26 @@ const REGION_VIEWS = {
 export default function MapExplorer({
   onAddToTrip = null,
   embedded = false,
-  selectedId = null
+  selectedId = null,
+  onSelectDestination = null,
 }) {
   const navigate = useNavigate();
-  const { currency } = useApp();
+  const { currency, isInCompare, addToCompare, removeFromCompare } = useApp();
+  const { isSaved, toggleSaved } = useSaved();
   const [activeRegion, setActiveRegion] = useState('all');
-  const [selectedDestination, setSelectedDestination] = useState(() => {
-    return selectedId ? destinations.find((d) => d.id === selectedId) : destinations[0];
-  });
+  const [internalSelectedId, setInternalSelectedId] = useState(selectedId || destinations[0].id);
   const [hoveredData, setHoveredData] = useState(null);
   const [zoomLevel, setZoomLevel] = useState(1);
+
+  const activeSelectedId = selectedId || internalSelectedId;
+  const selectedDestination = destinations.find((d) => d.id === activeSelectedId) || destinations[0];
+
+  const handleMarkerSelect = (dest) => {
+    setInternalSelectedId(dest.id);
+    if (onSelectDestination) {
+      onSelectDestination(dest);
+    }
+  };
 
   // Projection formula: Equirectangular SVG (1000 x 500)
   const getCoordinates = (lat, lng) => {
@@ -175,7 +186,7 @@ export default function MapExplorer({
                 x={x}
                 y={y}
                 isSelected={isSelected}
-                onClick={(d) => setSelectedDestination(d)}
+                onClick={handleMarkerSelect}
                 onHover={(d, mx, my) => setHoveredData({ dest: d, x: mx, y: my })}
                 onLeave={() => setHoveredData(null)}
               />
@@ -209,20 +220,20 @@ export default function MapExplorer({
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="absolute bottom-4 left-4 right-4 z-20 max-w-xl mx-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 p-4 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4"
+          className="absolute bottom-4 left-4 right-4 z-20 max-w-2xl mx-auto bg-slate-900/90 backdrop-blur-xl border border-white/15 p-4 rounded-2xl shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4"
         >
-          <div className="flex items-center gap-3.5 w-full sm:w-auto">
+          <div className="flex items-center gap-3.5 w-full sm:w-auto min-w-0">
             <img
               src={selectedDestination.image}
               alt={selectedDestination.name}
               className="w-16 h-16 rounded-xl object-cover shrink-0 border border-white/10"
             />
-            <div>
+            <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <h4 className="text-lg font-bold font-heading text-white">
+                <h4 className="text-base sm:text-lg font-bold font-heading text-white truncate">
                   {selectedDestination.name}
                 </h4>
-                <span className="text-xs text-white/60">({selectedDestination.country})</span>
+                <span className="text-xs text-white/60 shrink-0">({selectedDestination.country})</span>
               </div>
               <p className="text-xs text-white/70 line-clamp-1 max-w-xs mt-0.5">
                 {selectedDestination.tagline || selectedDestination.shortDescription}
@@ -243,22 +254,56 @@ export default function MapExplorer({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
+          <div className="flex items-center gap-2 w-full sm:w-auto justify-end shrink-0">
+            {/* Wishlist toggle */}
+            <button
+              type="button"
+              onClick={() => toggleSaved(selectedDestination.id)}
+              className={`p-2.5 rounded-xl border transition-all ${
+                isSaved(selectedDestination.id)
+                  ? 'bg-rose-500/20 text-rose-400 border-rose-500/40 hover:bg-rose-500/30'
+                  : 'bg-white/10 text-white/70 border-white/20 hover:text-white hover:bg-white/20'
+              }`}
+              title={isSaved(selectedDestination.id) ? 'Remove from Wishlist' : 'Add to Wishlist'}
+            >
+              <Heart className={`w-3.5 h-3.5 ${isSaved(selectedDestination.id) ? 'fill-rose-400' : ''}`} />
+            </button>
+
+            {/* Compare toggle */}
+            <button
+              type="button"
+              onClick={() => {
+                if (isInCompare(selectedDestination.id)) {
+                  removeFromCompare(selectedDestination.id);
+                } else {
+                  addToCompare(selectedDestination.id);
+                }
+              }}
+              className={`p-2.5 rounded-xl border transition-all ${
+                isInCompare(selectedDestination.id)
+                  ? 'bg-secondary text-white border-secondary'
+                  : 'bg-white/10 text-white/70 border-white/20 hover:text-white hover:bg-white/20'
+              }`}
+              title={isInCompare(selectedDestination.id) ? 'Remove from Compare' : 'Add to Compare'}
+            >
+              <Scale className="w-3.5 h-3.5" />
+            </button>
+
             {onAddToTrip && (
               <button
                 type="button"
                 onClick={() => onAddToTrip(selectedDestination)}
-                className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 flex items-center gap-1.5 transition-all"
+                className="px-3.5 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-semibold border border-white/20 flex items-center gap-1.5 transition-all"
               >
                 <Plus className="w-3.5 h-3.5 text-highlight" />
-                <span>Trip</span>
+                <span className="hidden sm:inline">Trip</span>
               </button>
             )}
 
             <button
               type="button"
               onClick={() => navigate(`/destination/${selectedDestination.id}`)}
-              className="px-4 py-2 rounded-xl bg-secondary hover:bg-secondary-hover text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
+              className="px-4 py-2.5 rounded-xl bg-secondary hover:bg-secondary-hover text-white text-xs font-bold flex items-center gap-1.5 transition-all shadow-md"
             >
               <span>Explore</span>
               <ArrowUpRight className="w-3.5 h-3.5" />

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import SectionHeader from '../components/SectionHeader';
 import Modal from '../components/Modal';
+import TripBuilder from '../components/TripBuilder';
 import { useApp } from '../context/AppContext';
+import { useSaved } from '../context/SavedContext';
 import { destinations } from '../data/destinations';
 import { formatCurrency } from '../utils/formatCurrency';
 import {
@@ -15,12 +17,18 @@ import {
   CloudSun,
   Calendar,
   Compass,
-  ArrowRight
+  ArrowRight,
+  Heart,
+  Trash2,
+  Sparkles
 } from 'lucide-react';
 
 export default function Compare() {
-  const { compareIds, removeFromCompare, addToCompare, currency } = useApp();
+  const { compareIds, removeFromCompare, addToCompare, clearCompare, currency } = useApp();
+  const { isSaved, toggleSaved } = useSaved();
   const [selectModalOpen, setSelectModalOpen] = useState(false);
+  const [tripBuilderOpen, setTripBuilderOpen] = useState(false);
+  const [destinationToAdd, setDestinationToAdd] = useState(null);
 
   const selectedDestinations = compareIds
     .map((id) => destinations.find((d) => d.id === id))
@@ -29,6 +37,22 @@ export default function Compare() {
   const availableDestinations = destinations.filter(
     (d) => !compareIds.includes(d.id)
   );
+
+  // Compute badges for best value and highest rated
+  const bestValueId = useMemo(() => {
+    if (selectedDestinations.length < 2) return null;
+    return [...selectedDestinations].sort((a, b) => a.averageDailyBudget - b.averageDailyBudget)[0]?.id;
+  }, [selectedDestinations]);
+
+  const topRatedId = useMemo(() => {
+    if (selectedDestinations.length < 2) return null;
+    return [...selectedDestinations].sort((a, b) => b.rating - a.rating)[0]?.id;
+  }, [selectedDestinations]);
+
+  const handleAddToTrip = (dest) => {
+    setDestinationToAdd(dest);
+    setTripBuilderOpen(true);
+  };
 
   return (
     <div className="min-h-screen pt-28 pb-24 bg-aether-bgLight dark:bg-aether-bgDark">
@@ -40,16 +64,28 @@ export default function Compare() {
           title="COMPARE DESTINATIONS"
           subtitle="Evaluate daily costs, optimal seasons, climate ratings, and activity offerings for up to 3 places."
           action={
-            selectedDestinations.length < 3 ? (
-              <button
-                type="button"
-                onClick={() => setSelectModalOpen(true)}
-                className="px-4 py-2.5 rounded-full bg-secondary hover:bg-secondary-hover text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow transition-all"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Add Destination ({selectedDestinations.length}/3)</span>
-              </button>
-            ) : null
+            <div className="flex items-center gap-2">
+              {selectedDestinations.length > 0 && (
+                <button
+                  type="button"
+                  onClick={clearCompare}
+                  className="px-3.5 py-2.5 rounded-full border border-slate-200 dark:border-slate-700 text-slate-500 hover:text-red-500 dark:hover:text-red-400 text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Clear All</span>
+                </button>
+              )}
+              {selectedDestinations.length < 3 && (
+                <button
+                  type="button"
+                  onClick={() => setSelectModalOpen(true)}
+                  className="px-4 py-2.5 rounded-full bg-secondary hover:bg-secondary-hover text-white text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 shadow transition-all"
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Add Place ({selectedDestinations.length}/3)</span>
+                </button>
+              )}
+            </div>
           }
         />
 
@@ -63,43 +99,84 @@ export default function Compare() {
                   Feature Matrix
                 </div>
 
-                {selectedDestinations.map((dest) => (
-                  <div key={dest.id} className="p-5 relative group border-l border-slate-200 dark:border-slate-800">
-                    <button
-                      type="button"
-                      onClick={() => removeFromCompare(dest.id)}
-                      className="absolute top-3 right-3 p-1.5 rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/90 transition-colors z-10"
-                      title="Remove from comparison"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                    </button>
+                {selectedDestinations.map((dest) => {
+                  const saved = isSaved(dest.id);
+                  const isBestValue = bestValueId === dest.id;
+                  const isTopRated = topRatedId === dest.id;
 
-                    <div className="relative h-44 rounded-xl overflow-hidden mb-3">
-                      <img
-                        src={dest.image}
-                        alt={dest.name}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end p-3">
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-black/40 px-2 py-0.5 rounded backdrop-blur-md">
-                          {dest.country}
-                        </span>
+                  return (
+                    <div key={dest.id} className="p-5 relative group border-l border-slate-200 dark:border-slate-800">
+                      <div className="absolute top-3 right-3 flex items-center gap-1.5 z-10">
+                        <button
+                          type="button"
+                          onClick={() => toggleSaved(dest.id)}
+                          className={`p-1.5 rounded-full backdrop-blur-md transition-colors ${
+                            saved
+                              ? 'bg-rose-500 text-white'
+                              : 'bg-black/60 text-white/80 hover:text-white hover:bg-black/80'
+                          }`}
+                          title={saved ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                        >
+                          <Heart className={`w-3.5 h-3.5 ${saved ? 'fill-white' : ''}`} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => removeFromCompare(dest.id)}
+                          className="p-1.5 rounded-full bg-black/60 text-white/80 hover:text-white hover:bg-black/90 transition-colors"
+                          title="Remove from comparison"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <div className="relative h-44 rounded-xl overflow-hidden mb-3">
+                        <img
+                          src={dest.image}
+                          alt={dest.name}
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent flex items-end justify-between p-3">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-white bg-black/40 px-2 py-0.5 rounded backdrop-blur-md">
+                            {dest.country}
+                          </span>
+                          {isBestValue && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 border border-emerald-500/40 px-2 py-0.5 rounded backdrop-blur-md flex items-center gap-1">
+                              <Sparkles className="w-2.5 h-2.5" /> Best Value
+                            </span>
+                          )}
+                          {!isBestValue && isTopRated && (
+                            <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 bg-amber-950/80 border border-amber-500/40 px-2 py-0.5 rounded backdrop-blur-md flex items-center gap-1">
+                              <Star className="w-2.5 h-2.5 fill-amber-300" /> Top Rated
+                            </span>
+                          )}
+                        </div>
+                      </div>
+
+                      <h4 className="font-heading font-bold text-lg text-aether-textMain dark:text-white mb-1">
+                        {dest.name}
+                      </h4>
+
+                      <div className="flex items-center justify-between gap-2 mt-2">
+                        <Link
+                          to={`/destination/${dest.id}`}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline"
+                        >
+                          <span>Details</span>
+                          <ArrowRight className="w-3 h-3" />
+                        </Link>
+
+                        <button
+                          type="button"
+                          onClick={() => handleAddToTrip(dest)}
+                          className="px-2.5 py-1 rounded-lg bg-primary dark:bg-white text-white dark:text-primary text-[11px] font-bold flex items-center gap-1 hover:opacity-90 transition-opacity"
+                        >
+                          <Plus className="w-3 h-3" />
+                          <span>Trip</span>
+                        </button>
                       </div>
                     </div>
-
-                    <h4 className="font-heading font-bold text-lg text-aether-textMain dark:text-white mb-1">
-                      {dest.name}
-                    </h4>
-
-                    <Link
-                      to={`/destination/${dest.id}`}
-                      className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:underline"
-                    >
-                      <span>View details</span>
-                      <ArrowRight className="w-3 h-3" />
-                    </Link>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {/* Empty slot placeholders */}
                 {Array.from({ length: 3 - selectedDestinations.length }).map((_, i) => (
@@ -267,6 +344,13 @@ export default function Compare() {
           ))}
         </div>
       </Modal>
+
+      {/* Trip Builder Modal */}
+      <TripBuilder
+        isOpen={tripBuilderOpen}
+        onClose={() => setTripBuilderOpen(false)}
+        destinationToAdd={destinationToAdd}
+      />
     </div>
   );
 }

@@ -127,5 +127,10 @@ git push origin main
 git add .
 git commit -m "Day 3: Itinerary Planner & Budget Intelligence"
 git push origin main
+
+# Day 4: Geospatial Explorer, Comparisons & Wishlists
+git add .
+git commit -m "Day 4: Geospatial Explorer, Comparisons & Wishlists"
+git push origin main
 ```
 
