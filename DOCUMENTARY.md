@@ -132,5 +132,11 @@ git push origin main
 git add .
 git commit -m "Day 4: Geospatial Explorer, Comparisons & Wishlists"
 git push origin main
+
+# Day 5: Travel Journal, Micro-Interactions, Polish & Launch
+git add .
+git commit -m "Day 5: Travel Journal, Micro-Interactions, Polish & Launch"
+git push origin main
 ```
+
 

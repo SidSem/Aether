@@ -7,7 +7,7 @@ import { estimateTripBudget, calculateBudgetBreakdown, DEFAULT_BUDGET_RATIOS } f
 
 const TripContext = createContext();
 
-export function inferTimeOfDay(activity) {
+function inferTimeOfDay(activity) {
   if (!activity) return 'morning';
   if (activity.timeOfDay) return activity.timeOfDay;
   const text = `${activity.title || ''} ${activity.description || ''}`.toLowerCase();

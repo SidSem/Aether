@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Link, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import SectionHeader from '../components/SectionHeader';
 import { journalArticles } from '../data/journal';
-import { Clock, BookOpen, ArrowRight, Sparkles } from 'lucide-react';
+import { Clock, ArrowRight } from 'lucide-react';
 
 export default function Journal() {
   const navigate = useNavigate();

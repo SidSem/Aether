@@ -3,6 +3,11 @@ import { useLocalStorage } from '../hooks/useLocalStorage';
 
 const AppContext = createContext();
 
+let toastCounter = 0;
+function createToastId() {
+  return `${Date.now()}-${++toastCounter}-${Math.random().toString(36).substring(2, 6)}`;
+}
+
 export function AppProvider({ children }) {
   // Theme state
   const [theme, setTheme] = useLocalStorage('aether_theme', 'dark');
@@ -52,7 +57,7 @@ export function AppProvider({ children }) {
   };
 
   const addToast = (message, type = 'info', duration = 3500) => {
-    const id = Date.now() + Math.random().toString(36).substring(2, 6);
+    const id = createToastId();
     setToasts((prev) => [...prev, { id, message, type }]);
 
     if (duration > 0) {

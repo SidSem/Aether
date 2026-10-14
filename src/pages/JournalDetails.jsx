@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { journalArticles } from '../data/journal';
-import { ArrowLeft, Clock, Calendar, User, Share2, Sparkles, BookOpen } from 'lucide-react';
+import { ArrowLeft, Clock, Calendar, User, Share2 } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function JournalDetails() {

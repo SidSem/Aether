@@ -1,8 +1,7 @@
 import React from 'react';
-import { motion } from 'framer-motion';
 import { Link } from 'react-router-dom';
 import SectionHeader from '../components/SectionHeader';
-import { Compass, Sparkles, Shield, Heart, Globe, ArrowRight } from 'lucide-react';
+import { Compass, Sparkles, Shield, Globe, ArrowRight } from 'lucide-react';
 
 export default function About() {
   return (

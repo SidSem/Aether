@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SectionHeader from '../components/SectionHeader';
 import SearchBar from '../components/SearchBar';
@@ -34,13 +34,15 @@ export default function Explore() {
   const [selectedDestinationForTrip, setSelectedDestinationForTrip] = useState(null);
   const [tripBuilderOpen, setTripBuilderOpen] = useState(false);
 
-  // Sync when searchParams change
-  useEffect(() => {
-    const styleFromQuery = searchParams.get('style');
-    if (styleFromQuery) {
-      setFilters((prev) => (prev.travelStyle !== styleFromQuery ? { ...prev, travelStyle: styleFromQuery } : prev));
+  // Sync when searchParams change during navigation
+  const styleFromQuery = searchParams.get('style');
+  const [prevStyleQuery, setPrevStyleQuery] = useState(styleFromQuery);
+  if (styleFromQuery !== prevStyleQuery) {
+    setPrevStyleQuery(styleFromQuery);
+    if (styleFromQuery && filters.travelStyle !== styleFromQuery) {
+      setFilters((prev) => ({ ...prev, travelStyle: styleFromQuery }));
     }
-  }, [searchParams]);
+  }
 
   // Compute filtered results
   const filteredDestinations = useMemo(() => {
